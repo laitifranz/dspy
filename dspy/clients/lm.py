@@ -94,6 +94,9 @@ class LM(BaseLM):
             self.kwargs = dict(temperature=temperature, max_completion_tokens=max_tokens, **kwargs)
         else:
             self.kwargs = dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
+        
+        if cache:
+            logger.warning("Caching is enabled. The model caches responses for reuse to improve performance and reduce costs. This may lead to unexpected behaviour if you are using a local model.")
 
     @with_callbacks
     def forward(self, prompt=None, messages=None, **kwargs):
