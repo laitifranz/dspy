@@ -90,28 +90,28 @@ class ChatAdapter(Adapter):
         return messages
 
     def parse(self, signature: Type[Signature], completion: str) -> dict[str, Any]:
-        sections = [(None, [])]
-
-        for line in completion.splitlines():
-            match = field_header_pattern.match(line.strip())
-            if match:
-                # If the header pattern is found, split the rest of the line as content
-                header = match.group(1)
-                remaining_content = line[match.end() :].strip()
-                sections.append((header, [remaining_content] if remaining_content else []))
-            else:
-                sections[-1][1].append(line)
-
-        sections = [(k, "\n".join(v).strip()) for k, v in sections]
-
+        field_matches = list(re.finditer(field_header_pattern, completion))
+        
         fields = {}
-        for k, v in sections:
-            if (k not in fields) and (k in signature.output_fields):
+        
+        for i, match in enumerate(field_matches):
+            field_name = match.group(1)
+            start_pos = match.end()
+            
+            # If this is the last field, content extends to the end of the string
+            if i == len(field_matches) - 1:
+                content = completion[start_pos:].strip()
+            else:
+                # Otherwise, content extends to the start of the next field
+                next_field_start = field_matches[i + 1].start()
+                content = completion[start_pos:next_field_start].strip()
+            
+            if (field_name not in fields) and (field_name in signature.output_fields):
                 try:
-                    fields[k] = parse_value(v, signature.output_fields[k].annotation)
+                    fields[field_name] = parse_value(content, signature.output_fields[field_name].annotation)
                 except Exception as e:
                     raise ValueError(
-                        f"Error parsing field {k}: {e}.\n\n\t\tOn attempting to parse the value\n```\n{v}\n```"
+                        f"Error parsing field {field_name}: {e}.\n\n\t\tOn attempting to parse the value\n```\n{content}\n```"
                     )
 
         if fields.keys() != signature.output_fields.keys():
