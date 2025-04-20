@@ -21,7 +21,7 @@ class SIMBA(Teleprompter):
         max_steps=8,
         max_demos=4,
         demo_input_field_maxlen=100_000,
-        num_threads=16,
+        num_threads=None,
         temperature_for_sampling=0.2,
         temperature_for_candidates=0.2,
     ):
@@ -310,7 +310,7 @@ class SIMBA(Teleprompter):
                 trial_logs[idx_prog-1]["train_score"] = avg_score
         
         best_idx = scores.index(max(scores)) if scores else 0
-        best_program = candidate_programs[best_idx]
+        best_program = candidate_programs[best_idx].deepcopy()
         logger.info(
             f"Final trainset scores: {scores}, Best: {max(scores) if scores else 'N/A'} "
             f"(at index {best_idx if scores else 'N/A'})\n\n\n"
